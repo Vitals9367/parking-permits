@@ -1,8 +1,6 @@
 import logging
-from enum import Enum
 
 from django.db import models, transaction
-from django.db.models.expressions import RawSQL
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from helsinki_gdpr.models import SerializableMixin
@@ -51,14 +49,9 @@ class Subscription(SerializableMixin, TimestampedModelMixin):
         return f"Subscription #{self.id} ({self.status})"
 
 
-class OrderPaymentType(Enum):
-    ONLINE_PAYMENT = "ONLINE_PAYMENT"
-    CASHIER_PAYMENT = "CASHIER_PAYMENT"
-
-
-class OrderType(models.TextChoices):
-    ORDER = "ORDER", _("Order")
-    SUBSCRIPTION = "SUBSCRIPTION", _("Subscription")
+class OrderPaymentType(models.TextChoices):
+    ONLINE_PAYMENT = "ONLINE_PAYMENT", _("Online payment")
+    CASHIER_PAYMENT = "CASHIER_PAYMENT", _("Cashier payment")
 
 
 class OrderStatus(models.TextChoices):
@@ -68,17 +61,6 @@ class OrderStatus(models.TextChoices):
 
 
 class OrderManager(SerializableMixin.SerializableManager):
-    def get_queryset(self):
-        return (
-            super()
-            .get_queryset()
-            .annotate(
-                order_number=RawSQL(
-                    "order_number", (), output_field=models.IntegerField()
-                )
-            )
-        )
-
     def _validate_permits(self, permits):
         if len(permits) > 2:
             raise OrderCreationFailed("More than 2 draft permits found")
@@ -91,16 +73,10 @@ class OrderManager(SerializableMixin.SerializableManager):
     @transaction.atomic
     def create_for_permits(self, permits, status=OrderStatus.DRAFT):
         self._validate_permits(permits)
-        if permits[0].contract_type == ContractType.OPEN_ENDED:
-            order_type = OrderType.SUBSCRIPTION
-        else:
-            order_type = OrderType.ORDER
 
         paid_time = timezone.now() if status == OrderStatus.CONFIRMED else None
-
         order = Order.objects.create(
             customer=permits[0].customer,
-            order_type=order_type,
             status=status,
             paid_time=paid_time,
         )
@@ -165,7 +141,6 @@ class OrderManager(SerializableMixin.SerializableManager):
 
         new_order = Order.objects.create(
             customer=customer,
-            order_type=OrderType.ORDER,
             status=status,
         )
         for permit in customer_permits:
@@ -238,12 +213,19 @@ class OrderManager(SerializableMixin.SerializableManager):
         return new_order
 
 
-class Order(SerializableMixin, TimestampedModelMixin, UUIDPrimaryKeyMixin):
+class Order(SerializableMixin, TimestampedModelMixin):
+    order_number = models.BigAutoField(
+        _("order number"), primary_key=True, editable=False
+    )
+    subscription = models.ForeignKey(
+        Subscription,
+        verbose_name=_("Subscription"),
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+    )
     talpa_order_id = models.UUIDField(
         _("Talpa order id"), unique=True, editable=False, null=True, blank=True
-    )
-    talpa_subscription_id = models.UUIDField(
-        _("Talpa subscription id"), unique=True, editable=False, null=True, blank=True
     )
     talpa_checkout_url = models.URLField(_("Talpa checkout url"), blank=True)
     talpa_receipt_url = models.URLField(_("Talpa receipt_url"), blank=True)
@@ -252,12 +234,6 @@ class Order(SerializableMixin, TimestampedModelMixin, UUIDPrimaryKeyMixin):
         verbose_name=_("Customer"),
         related_name="orders",
         on_delete=models.PROTECT,
-    )
-    order_type = models.CharField(
-        _("Order type"),
-        max_length=50,
-        choices=OrderType.choices,
-        default=OrderType.ORDER,
     )
     status = models.CharField(
         _("Order status"),
@@ -269,7 +245,7 @@ class Order(SerializableMixin, TimestampedModelMixin, UUIDPrimaryKeyMixin):
     objects = OrderManager()
 
     serialize_fields = (
-        {"name": "order_type"},
+        {"name": "order_number"},
         {"name": "status"},
         {"name": "order_items"},
     )
@@ -279,7 +255,7 @@ class Order(SerializableMixin, TimestampedModelMixin, UUIDPrimaryKeyMixin):
         verbose_name_plural = _("Orders")
 
     def __str__(self):
-        return f"Order: {self.id} ({self.order_type})"
+        return f"Order #{self.order_number} ({self.status})"
 
     @property
     def is_confirmed(self):
@@ -289,9 +265,9 @@ class Order(SerializableMixin, TimestampedModelMixin, UUIDPrimaryKeyMixin):
     def payment_type(self):
         if self.is_confirmed:
             if self.talpa_order_id:
-                return OrderPaymentType.ONLINE_PAYMENT.value
+                return OrderPaymentType.ONLINE_PAYMENT
             else:
-                return OrderPaymentType.CASHIER_PAYMENT.value
+                return OrderPaymentType.CASHIER_PAYMENT
         return ""
 
     @property

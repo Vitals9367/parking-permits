@@ -9,7 +9,6 @@ from django.utils import timezone
 from django.utils.translation import gettext as _
 
 from parking_permits.exceptions import OrderCreationFailed
-from parking_permits.models.order import OrderType
 from parking_permits.utils import date_time_to_utc
 
 logger = logging.getLogger("db")
@@ -67,7 +66,7 @@ class TalpaOrderManager:
                 },
             ],
         }
-        if order.order_type == OrderType.SUBSCRIPTION:
+        if order_item.permit.is_open_ended:
             item.update(
                 {
                     "periodUnit": "monthly",
