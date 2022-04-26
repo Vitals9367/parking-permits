@@ -18,6 +18,39 @@ from .product import Product
 logger = logging.getLogger("db")
 
 
+class SubscriptionStatus(models.TextChoices):
+    CONFIRMED = "CONFIRMED", _("Confirmed")
+    CANCELLED = "CANCELLED", _("Cancelled")
+
+
+class Subscription(SerializableMixin, TimestampedModelMixin):
+    customer = models.ForeignKey(
+        Customer, verbose_name=_("Customer"), on_delete=models.PROTECT
+    )
+    talpa_subscription_id = models.UUIDField(
+        _("Talpa subscription id"), unique=True, editable=False, null=True, blank=True
+    )
+    status = models.CharField(
+        _("Status"), max_length=20, choices=SubscriptionStatus.choices
+    )
+    start_date = models.DateField(_("Start date"))
+    end_date = models.DateField(_("End date"))
+    period_unit = models.CharField(_("Period unit"), max_length=20)
+    period_frequency = models.IntegerField(_("Period frequency"))
+
+    serialize_fields = (
+        {"name": "customer"},
+        {"name": "status"},
+    )
+
+    class Meta:
+        verbose_name = _("Subscription")
+        verbose_name_plural = _("Subscriptions")
+
+    def __str__(self):
+        return f"Subscription #{self.id} ({self.status})"
+
+
 class OrderPaymentType(Enum):
     ONLINE_PAYMENT = "ONLINE_PAYMENT"
     CASHIER_PAYMENT = "CASHIER_PAYMENT"
