@@ -14,7 +14,7 @@ def user_passes_test(test_func):
             except AuthenticationError as e:
                 raise PermissionDenied(e)
 
-            if test_func(auth.user):
+            if auth and test_func(auth.user):
                 request.user = auth.user
                 return f(obj, info, *args, **kwargs)
             raise PermissionDenied()
@@ -26,3 +26,25 @@ def user_passes_test(test_func):
 
 is_authenticated = user_passes_test(lambda u: u.is_authenticated)
 is_ad_admin = user_passes_test(lambda u: u.is_ad_admin)
+
+
+def require_user_passes_test(test_func):
+    def decorator(f):
+        @wraps(f)
+        def wrapper(request, *args, **kwargs):
+            try:
+                auth = RequestJWTAuthentication().authenticate(request)
+            except AuthenticationError as e:
+                raise PermissionDenied(e)
+
+            if auth and test_func(auth.user):
+                request.user = auth.user
+                return f(request, *args, **kwargs)
+            raise PermissionDenied()
+
+        return wrapper
+
+    return decorator
+
+
+require_ad_admin = require_user_passes_test(lambda u: u.is_ad_admin)

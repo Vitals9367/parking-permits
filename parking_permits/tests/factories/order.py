@@ -21,6 +21,7 @@ class OrderItemFactory(factory.django.DjangoModelFactory):
     product = factory.SubFactory(ProductFactory)
     permit = factory.SubFactory(ParkingPermitFactory)
     unit_price = Decimal(30)
+    payment_unit_price = Decimal(30)
     vat = Decimal(0.24)
     quantity = 6
 

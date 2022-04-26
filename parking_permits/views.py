@@ -1,9 +1,11 @@
+import csv
 import json
 import logging
 
 from django.conf import settings
 from django.db import transaction
-from django.http import Http404
+from django.http import Http404, HttpResponse, HttpResponseBadRequest
+from django.views.decorators.http import require_safe
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from helsinki_gdpr.views import DeletionNotAllowed, DryRunSerializer, GDPRAPIView
@@ -11,6 +13,9 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from .decorators import require_ad_admin
+from .exporters import DataExporter
+from .forms import DataExportForm
 from .models import Customer, Order
 from .models.common import SourceSystem
 from .models.order import OrderStatus
@@ -216,3 +221,26 @@ class ParkingPermitsGDPRAPIView(GDPRAPIView):
             if dry_run_serializer.data["dry_run"]:
                 transaction.set_rollback(True)
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+@require_ad_admin
+@require_safe
+def csv_export(request):
+    form = DataExportForm(request.GET)
+    if not form.is_valid():
+        return HttpResponseBadRequest()
+
+    filename = form.cleaned_data["data_type"]
+    response = HttpResponse(
+        content_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="{filename}.csv"'},
+    )
+    data_exporter = DataExporter(
+        form.cleaned_data["data_type"],
+        form.cleaned_data["order_by"],
+        form.cleaned_data["search_items"],
+    )
+    writer = csv.writer(response)
+    writer.writerow(data_exporter.get_headers())
+    writer.writerows(data_exporter.get_rows())
+    return response

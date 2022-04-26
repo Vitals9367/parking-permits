@@ -2,6 +2,7 @@ import calendar
 import operator
 from functools import reduce
 
+from ariadne import convert_camel_case_to_snake
 from dateutil.relativedelta import relativedelta
 from django.db.models import Q
 from django.utils import timezone
@@ -80,3 +81,18 @@ def date_time_to_utc(dt):
     return (
         dt.replace(microsecond=0).astimezone(utc).replace(tzinfo=None).isoformat() + "Z"
     )
+
+
+def convert_to_snake_case(d):
+    if isinstance(d, str):
+        return convert_camel_case_to_snake(d)
+    if isinstance(d, list):
+        return [convert_to_snake_case(i) if isinstance(i, dict) else i for i in d]
+    if isinstance(d, dict):
+        converted = {}
+        for k, v in d.items():
+            if isinstance(v, (dict, list)):
+                v = convert_to_snake_case(v)
+            converted[convert_camel_case_to_snake(k)] = v
+        return converted
+    return d

@@ -1,7 +1,7 @@
 import datetime
 
 import reversion
-from django.test import TestCase
+from django.test import TestCase, override_settings
 
 from parking_permits.models import ParkingPermit
 from parking_permits.models.parking_permit import ParkingPermitStatus
@@ -16,6 +16,7 @@ from parking_permits.tests.factories.parking_permit import ParkingPermitFactory
 from users.tests.factories.user import UserFactory
 
 
+@override_settings(LANGUAGE_CODE="en")
 class FieldChangeResolverTestCase(TestCase):
     def test_is_changed_return_true_for_time_diff_greater_than_1_millisecond(self):
         dt_1 = datetime.datetime(2021, 10, 1, 0, 0, 0, 0)
