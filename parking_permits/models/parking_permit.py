@@ -139,14 +139,6 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin, UUIDPrimaryKeyMixi
         default=ParkingPermitStartType.IMMEDIATELY,
     )
     month_count = models.IntegerField(_("Month count"), default=1)
-    order = models.ForeignKey(
-        "Order",
-        related_name="permits",
-        verbose_name=_("Order"),
-        blank=True,
-        null=True,
-        on_delete=models.PROTECT,
-    )
     description = models.TextField(_("Description"), blank=True)
     address = models.ForeignKey(
         "Address",
@@ -206,6 +198,21 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin, UUIDPrimaryKeyMixi
             monthly_price -= discount * monthly_price
 
         return monthly_price * month_count, monthly_price
+
+    @property
+    def latest_order(self):
+        """Get latest order for the permit
+
+        Multiple orders can be created for the same permit
+        when, for example, the vehicle or the address of
+        the permit is changed.
+        """
+        return self.orders.latest("order_number")
+
+    @property
+    def latest_order_items(self):
+        """Get latest order items for the permit"""
+        return self.order_items.filter(order=self.latest_order)
 
     @property
     def is_valid(self):
@@ -274,13 +281,7 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin, UUIDPrimaryKeyMixi
 
     @property
     def can_be_refunded(self):
-        return (
-            self.is_valid
-            and self.is_fixed_period
-            and self.order
-            and self.order.is_confirmed
-            and not hasattr(self.order, "refund")
-        )
+        return self.is_valid and self.is_fixed_period
 
     def get_price_change_list(self, new_zone, is_low_emission):
         """Get a list of price changes if the permit is changed
@@ -435,9 +436,9 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin, UUIDPrimaryKeyMixi
             )
 
         unused_start_date = timezone.localdate(self.next_period_start_time)
-        order_items = self.order_items.filter(end_date__gte=unused_start_date).order_by(
-            "start_date"
-        )
+        order_items = self.latest_order_items.filter(
+            end_date__gte=unused_start_date
+        ).order_by("start_date")
 
         if len(order_items) == 0:
             return []

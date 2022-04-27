@@ -80,6 +80,8 @@ class OrderManager(SerializableMixin.SerializableManager):
             status=status,
             paid_time=paid_time,
         )
+        order.permits.add(*permits)
+
         for permit in permits:
             products_with_quantity = permit.get_products_with_quantities()
             for product, quantity, date_range in products_with_quantity:
@@ -98,9 +100,6 @@ class OrderManager(SerializableMixin.SerializableManager):
                     start_date=start_date,
                     end_date=end_date,
                 )
-            permit.order = order
-            permit.save()
-
         return order
 
     def _validate_customer_permits(self, permits):
@@ -242,6 +241,9 @@ class Order(SerializableMixin, TimestampedModelMixin):
         default=OrderStatus.DRAFT,
     )
     paid_time = models.DateTimeField(_("Paid time"), blank=True, null=True)
+    permits = models.ManyToManyField(
+        ParkingPermit, verbose_name=_("permits"), related_name="orders"
+    )
     objects = OrderManager()
 
     serialize_fields = (

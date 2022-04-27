@@ -108,7 +108,6 @@ type RefundNode {
 type OrderNode {
   id: ID!
   orderNumber: Int!
-  orderType: String!
   totalPrice: Float!
   customer: CustomerNode!
   paidTime: String
