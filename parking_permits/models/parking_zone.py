@@ -7,7 +7,7 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from ..exceptions import PriceError
-from .mixins import TimestampedModelMixin, UUIDPrimaryKeyMixin
+from .mixins import TimestampedModelMixin
 from .price import Price, PriceType
 
 logger = logging.getLogger("db")
@@ -18,13 +18,10 @@ class ParkingZoneManager(models.Manager):
         return self.get(location__intersects=location)
 
 
-class ParkingZone(TimestampedModelMixin, UUIDPrimaryKeyMixin):
+class ParkingZone(TimestampedModelMixin):
     name = models.CharField(_("Name"), max_length=128, unique=True)
     description = models.TextField(_("Description"), blank=True)
     description_sv = models.TextField(_("Description sv"), blank=True)
-    shared_product_id = models.UUIDField(
-        unique=True, editable=False, blank=True, null=True
-    )
     location = models.MultiPolygonField(_("Area (2D)"), srid=settings.SRID)
 
     objects = ParkingZoneManager()

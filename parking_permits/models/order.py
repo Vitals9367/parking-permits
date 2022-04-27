@@ -5,7 +5,7 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from helsinki_gdpr.models import SerializableMixin
 
-from parking_permits.mixins import TimestampedModelMixin, UUIDPrimaryKeyMixin
+from parking_permits.mixins import TimestampedModelMixin
 
 from ..exceptions import OrderCreationFailed
 from ..utils import diff_months_ceil
@@ -80,7 +80,6 @@ class OrderManager(SerializableMixin.SerializableManager):
             status=status,
             paid_time=paid_time,
         )
-        order.permits.add(*permits)
 
         for permit in permits:
             products_with_quantity = permit.get_products_with_quantities()
@@ -100,6 +99,8 @@ class OrderManager(SerializableMixin.SerializableManager):
                     start_date=start_date,
                     end_date=end_date,
                 )
+
+        order.permits.add(*permits)
         return order
 
     def _validate_customer_permits(self, permits):
@@ -113,10 +114,6 @@ class OrderManager(SerializableMixin.SerializableManager):
                 raise OrderCreationFailed(
                     "Cannot create renewal order for open ended permits"
                 )
-            if permit.order is None:
-                raise OrderCreationFailed("Permit does not have an order")
-            if permit.order.status != OrderStatus.CONFIRMED:
-                raise OrderCreationFailed("Permit has unconfirmed order")
 
             start_date = timezone.localdate(permit.next_period_start_time)
             end_date = timezone.localdate(permit.end_time)
@@ -209,13 +206,13 @@ class OrderManager(SerializableMixin.SerializableManager):
                     product_detail = next(product_detail_iter, None)
                     order_item_detail = next(order_item_detail_iter, None)
 
+        # permits should be added to new order after all
+        # calculation and processing are done
+        new_order.permits.add(*customer_permits)
         return new_order
 
 
 class Order(SerializableMixin, TimestampedModelMixin):
-    order_number = models.BigAutoField(
-        _("order number"), primary_key=True, editable=False
-    )
     subscription = models.ForeignKey(
         Subscription,
         verbose_name=_("Subscription"),
@@ -247,7 +244,7 @@ class Order(SerializableMixin, TimestampedModelMixin):
     objects = OrderManager()
 
     serialize_fields = (
-        {"name": "order_number"},
+        {"name": "id"},
         {"name": "status"},
         {"name": "order_items"},
     )
@@ -257,7 +254,7 @@ class Order(SerializableMixin, TimestampedModelMixin):
         verbose_name_plural = _("Orders")
 
     def __str__(self):
-        return f"Order #{self.order_number} ({self.status})"
+        return f"Order #{self.id} ({self.status})"
 
     @property
     def is_confirmed(self):
@@ -301,7 +298,7 @@ class Order(SerializableMixin, TimestampedModelMixin):
         return sum([item.total_payment_price_vat for item in self.order_items.all()])
 
 
-class OrderItem(SerializableMixin, TimestampedModelMixin, UUIDPrimaryKeyMixin):
+class OrderItem(SerializableMixin, TimestampedModelMixin):
     talpa_order_item_id = models.UUIDField(
         _("Talpa order item id"), unique=True, editable=False, null=True, blank=True
     )

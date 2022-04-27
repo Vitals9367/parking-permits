@@ -24,7 +24,7 @@ from ..exceptions import (
     RefundError,
 )
 from ..utils import diff_months_ceil, get_end_time
-from .mixins import TimestampedModelMixin, UUIDPrimaryKeyMixin
+from .mixins import TimestampedModelMixin
 from .parking_zone import ParkingZone
 from .vehicle import Vehicle
 
@@ -57,13 +57,6 @@ class ParkingPermitStatus(models.TextChoices):
     CLOSED = "CLOSED", _("Closed")
 
 
-def get_next_identifier():
-    last = ParkingPermit.objects.order_by("-identifier").first()
-    if not last:
-        return 80000000
-    return last.identifier + 1
-
-
 class ParkingPermitQuerySet(models.QuerySet):
     def fixed_period(self):
         return self.filter(contract_type=ContractType.FIXED_PERIOD)
@@ -87,7 +80,7 @@ class ParkingPermitManager(SerializableMixin.SerializableManager):
 
 
 @reversion.register()
-class ParkingPermit(SerializableMixin, TimestampedModelMixin, UUIDPrimaryKeyMixin):
+class ParkingPermit(SerializableMixin, TimestampedModelMixin):
     customer = models.ForeignKey(
         "Customer",
         verbose_name=_("Customer"),
@@ -115,9 +108,6 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin, UUIDPrimaryKeyMixi
         max_length=32,
         choices=ParkingPermitStatus.choices,
         default=ParkingPermitStatus.DRAFT,
-    )
-    identifier = models.IntegerField(
-        default=get_next_identifier, editable=False, unique=True, db_index=True
     )
     start_time = models.DateTimeField(_("Start time"), default=timezone.now)
     end_time = models.DateTimeField(_("End time"), blank=True, null=True)
@@ -150,7 +140,7 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin, UUIDPrimaryKeyMixi
     )
 
     serialize_fields = (
-        {"name": "identifier"},
+        {"name": "id"},
         {"name": "vehicle", "accessor": lambda v: str(v)},
         {"name": "status"},
         {"name": "contract_type"},
@@ -164,12 +154,12 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin, UUIDPrimaryKeyMixi
     objects = ParkingPermitManager.from_queryset(ParkingPermitQuerySet)()
 
     class Meta:
-        ordering = ["-identifier"]
+        ordering = ["-id"]
         verbose_name = _("Parking permit")
         verbose_name_plural = _("Parking permits")
 
     def __str__(self):
-        return "%s" % self.identifier
+        return str(self.id)
 
     @property
     def is_secondary_vehicle(self):
@@ -207,7 +197,7 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin, UUIDPrimaryKeyMixi
         when, for example, the vehicle or the address of
         the permit is changed.
         """
-        return self.orders.latest("order_number")
+        return self.orders.latest("id")
 
     @property
     def latest_order_items(self):

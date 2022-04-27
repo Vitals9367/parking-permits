@@ -5,13 +5,13 @@ from django.contrib.gis.db import models
 from django.utils.translation import gettext_lazy as _
 from helsinki_gdpr.models import SerializableMixin
 
-from .mixins import TimestampedModelMixin, UUIDPrimaryKeyMixin
+from .mixins import TimestampedModelMixin
 from .parking_zone import ParkingZone
 
 logger = logging.getLogger("db")
 
 
-class Address(SerializableMixin, TimestampedModelMixin, UUIDPrimaryKeyMixin):
+class Address(SerializableMixin, TimestampedModelMixin):
     street_name = models.CharField(_("Street name"), max_length=128)
     street_name_sv = models.CharField(_("Street name sv"), max_length=128, blank=True)
     street_number = models.CharField(_("Street number"), max_length=128)

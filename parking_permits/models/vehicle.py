@@ -6,7 +6,7 @@ from django.contrib.postgres.fields import ArrayField
 from django.utils import timezone as tz
 from django.utils.translation import gettext_lazy as _
 
-from .mixins import TimestampedModelMixin, UUIDPrimaryKeyMixin
+from .mixins import TimestampedModelMixin
 
 
 class VehiclePowerType(models.TextChoices):
@@ -44,7 +44,7 @@ class EmissionType(models.TextChoices):
     WLTP = "WLTP", _("WLTP")
 
 
-class LowEmissionCriteria(TimestampedModelMixin, UUIDPrimaryKeyMixin):
+class LowEmissionCriteria(TimestampedModelMixin):
     power_type = models.CharField(
         _("Power type"), max_length=50, choices=VehiclePowerType.choices
     )
@@ -73,7 +73,7 @@ class LowEmissionCriteria(TimestampedModelMixin, UUIDPrimaryKeyMixin):
         )
 
 
-class Vehicle(TimestampedModelMixin, UUIDPrimaryKeyMixin):
+class Vehicle(TimestampedModelMixin):
     power_type = models.CharField(
         _("Power type"), max_length=50, choices=VehiclePowerType.choices, blank=True
     )

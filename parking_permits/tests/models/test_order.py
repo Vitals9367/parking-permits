@@ -64,7 +64,7 @@ class TestOrderManager(TestCase):
         self.assertEqual(order_items[1].unit_price, Decimal(50))
         self.assertEqual(order_items[1].quantity, 2)
 
-    def test_test_create_renewable_order_should_create_renewal_order(self):
+    def test_create_renewable_order_should_create_renewal_order(self):
         start_time = timezone.make_aware(datetime(CURRENT_YEAR, 3, 15))
         end_time = get_end_time(start_time, 6)  # end at CURRENT_YEAR-09-14 23:59
 

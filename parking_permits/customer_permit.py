@@ -232,10 +232,10 @@ class CustomerPermit:
                 if permit.can_be_refunded:
                     if not iban:
                         raise RefundError("IBAN is not provided")
-                    description = f"Refund for ending permit #{permit.identifier}"
+                    description = f"Refund for ending permit #{permit.id}"
                     Refund.objects.create(
                         name=str(permit.customer),
-                        order=permit.order,
+                        order=permit.latest_order,
                         amount=permit.get_refund_amount_for_unused_items(),
                         iban=iban,
                         description=description,

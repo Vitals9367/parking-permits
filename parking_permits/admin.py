@@ -78,7 +78,7 @@ class LowEmissionCriteriaAdmin(admin.ModelAdmin):
 class ParkingPermitAdmin(admin.ModelAdmin):
     search_fields = ("customer__first_name", "customer__last_name")
     list_display = (
-        "identifier",
+        "id",
         "customer",
         "vehicle",
         "parking_zone",
@@ -149,12 +149,12 @@ class ProductAdmin(admin.ModelAdmin):
 class OrderAdmin(admin.ModelAdmin):
     list_filter = ("status",)
     list_display = (
-        "order_number",
+        "id",
         "customer",
         "status",
     )
     list_select_related = ("customer",)
-    readonly_fields = ("order_number", "talpa_order_id")
+    readonly_fields = ("talpa_order_id",)
 
 
 @admin.register(OrderItem)

@@ -10,11 +10,11 @@ from helsinki_gdpr.models import SerializableMixin
 from ..services.traficom import Traficom
 from .common import SourceSystem
 from .driving_licence import DrivingLicence
-from .mixins import TimestampedModelMixin, UUIDPrimaryKeyMixin
+from .mixins import TimestampedModelMixin
 from .parking_permit import ParkingPermit, ParkingPermitStatus
 
 
-class Customer(SerializableMixin, TimestampedModelMixin, UUIDPrimaryKeyMixin):
+class Customer(SerializableMixin, TimestampedModelMixin):
     source_system = models.CharField(
         _("Source system"), max_length=50, choices=SourceSystem.choices, blank=True
     )

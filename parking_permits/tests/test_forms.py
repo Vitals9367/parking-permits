@@ -7,8 +7,8 @@ class DataExportFormTestCase(TestCase):
     def test_form_is_valid_when_valid_data_provided(self):
         data = {
             "data_type": "orders",
-            "order_by": '{"order_fields": ["order_number"], "order_direction": "DESC"}',
-            "search_items": '[{"matchType": "exact", "fields": ["order_number"], "value": 1}]',
+            "order_by": '{"order_fields": ["id"], "order_direction": "DESC"}',
+            "search_items": '[{"matchType": "exact", "fields": ["id"], "value": 1}]',
         }
         form = DataExportForm(data)
         self.assertTrue(form.is_valid())
