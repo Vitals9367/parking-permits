@@ -145,6 +145,11 @@ type PagedOrders {
   pageInfo: PageInfo
 }
 
+type PagedAddresses {
+  objects: [AddressNode]
+  pageInfo: PageInfo
+}
+
 enum OrderDirection {
   ASC,
   DESC
@@ -233,6 +238,10 @@ type Query {
     pageInput: PageInput!
     orderBy: OrderByInput
   ): PagedOrders!
+  addresses(
+    pageInput: PageInput!
+    orderBy: OrderByInput
+  ): PagedAddresses!
 }
 
 input AddressInput {
