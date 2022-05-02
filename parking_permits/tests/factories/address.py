@@ -7,7 +7,6 @@ from .zone import ParkingZoneFactory
 
 
 class AddressFactory(factory.django.DjangoModelFactory):
-    id = factory.Faker("uuid4")
     street_name = factory.Faker("street_name", locale="fi")
     street_number = factory.Faker("building_number")
     street_name_sv = factory.Faker("street_name", locale="sv")

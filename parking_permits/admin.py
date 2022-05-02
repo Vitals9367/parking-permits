@@ -78,7 +78,7 @@ class LowEmissionCriteriaAdmin(admin.ModelAdmin):
 class ParkingPermitAdmin(admin.ModelAdmin):
     search_fields = ("customer__first_name", "customer__last_name")
     list_display = (
-        "identifier",
+        "id",
         "customer",
         "vehicle",
         "parking_zone",
@@ -147,21 +147,14 @@ class ProductAdmin(admin.ModelAdmin):
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
-    list_filter = ("order_type", "status")
+    list_filter = ("status",)
     list_display = (
-        "order_number",
+        "id",
         "customer",
-        "order_type",
         "status",
     )
     list_select_related = ("customer",)
-    readonly_fields = ("order_number", "talpa_order_id", "talpa_subscription_id")
-
-    def order_number(self, obj):
-        return obj.order_number
-
-    order_number.admin_order_field = "order_number"
-    order_number.short_description = _("Order number")
+    readonly_fields = ("talpa_order_id",)
 
 
 @admin.register(OrderItem)

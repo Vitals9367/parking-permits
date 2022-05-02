@@ -43,7 +43,7 @@ def _get_order_row(order):
         permits[0].parking_zone.name,
         str(permits[0].address),
         permits[0].get_type_display(),
-        order.order_number,
+        order.id,
         order.paid_time.strftime(DATETIME_FORMAT) if order.paid_time else "",
         order.total_price,
     ]

@@ -70,7 +70,7 @@ def resolve_permits(obj, info, page_input, order_by=None, search_items=None):
 @is_ad_admin
 @convert_kwargs_to_snake_case
 def resolve_permit_detail(obj, info, permit_id):
-    return ParkingPermit.objects.get(identifier=permit_id)
+    return ParkingPermit.objects.get(id=permit_id)
 
 
 @PermitDetail.field("changeLogs")
@@ -244,7 +244,7 @@ def resolve_create_resident_permit(obj, info, permit):
 @transaction.atomic
 def resolve_permit_price_change_list(obj, info, permit_id, permit_info):
     try:
-        permit = ParkingPermit.objects.get(identifier=permit_id)
+        permit = ParkingPermit.objects.get(id=permit_id)
     except ParkingPermit.DoesNotExist:
         raise ObjectNotFound(_("Parking permit not found"))
 
@@ -263,7 +263,7 @@ def resolve_permit_price_change_list(obj, info, permit_id, permit_info):
 @transaction.atomic
 def resolve_update_resident_permit(obj, info, permit_id, permit_info, iban=None):
     try:
-        permit = ParkingPermit.objects.get(identifier=permit_id)
+        permit = ParkingPermit.objects.get(id=permit_id)
     except ParkingPermit.DoesNotExist:
         raise ObjectNotFound(_("Parking permit not found"))
 
@@ -274,7 +274,6 @@ def resolve_update_resident_permit(obj, info, permit_id, permit_info, iban=None)
 
     parking_zone = ParkingZone.objects.get(name=customer_info["zone"])
 
-    original_order = permit.order
     price_change_list = permit.get_price_change_list(
         parking_zone, vehicle_info["is_low_emission"]
     )
@@ -300,23 +299,21 @@ def resolve_update_resident_permit(obj, info, permit_id, permit_info, iban=None)
         reversion.set_comment(comment)
 
     if should_create_new_order:
-        logger.info(f"Creating renewal order for permit: {permit.identifier}")
+        if total_price_change < 0:
+            logger.info("Creating refund for current order")
+            refund = Refund.objects.create(
+                name=str(customer),
+                order=permit.latest_order,
+                amount=-total_price_change,
+                iban=iban,
+                description=f"Refund for updating permit: {permit.id}",
+            )
+            logger.info(f"Refund for lowered permit price created: {refund}")
+        logger.info(f"Creating renewal order for permit: {permit.id}")
         new_order = Order.objects.create_renewal_order(
             customer, status=OrderStatus.CONFIRMED
         )
         logger.info(f"Creating renewal order completed: {new_order.id}")
-        ParkingPermit.objects.active().fixed_period().filter(customer=customer).update(
-            order=new_order
-        )
-        if total_price_change < 0:
-            refund = Refund.objects.create(
-                name=str(customer),
-                order=original_order,
-                amount=-total_price_change,
-                iban=iban,
-                description=f"Refund for updating permit: {permit.identifier}",
-            )
-            logger.info(f"Refund for lowered permit price created: {refund}")
 
     return {"success": True}
 
@@ -327,14 +324,14 @@ def resolve_update_resident_permit(obj, info, permit_id, permit_info, iban=None)
 @transaction.atomic
 def resolve_end_permit(obj, info, permit_id, end_type, iban=None):
     request = info.context["request"]
-    permit = ParkingPermit.objects.get(identifier=permit_id)
+    permit = ParkingPermit.objects.get(id=permit_id)
     if permit.can_be_refunded:
         if not iban:
             raise RefundError("IBAN is not provided")
-        description = f"Refund for ending permit #{permit.identifier}"
+        description = f"Refund for ending permit #{permit.id}"
         Refund.objects.create(
             name=str(permit.customer),
-            order=permit.order,
+            order=permit.latest_order,
             amount=permit.get_refund_amount_for_unused_items(),
             iban=iban,
             description=description,
@@ -457,10 +454,10 @@ def resolve_refund(obj, info, refund_number):
 @mutation.field("updateRefund")
 @is_ad_admin
 @convert_kwargs_to_snake_case
-def resolve_update_refund(obj, info, refund_number, refund):
+def resolve_update_refund(obj, info, refund_id, refund):
     request = info.context["request"]
     try:
-        r = Refund.objects.get(refund_number=refund_number)
+        r = Refund.objects.get(id=refund_id)
     except Refund.DoesNotExist:
         raise ObjectNotFound("Refund not found")
 

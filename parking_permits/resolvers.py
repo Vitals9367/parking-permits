@@ -304,7 +304,7 @@ def resolve_change_address(_, info, address_id, iban=None):
                 [item["price_change"] for item in price_change_list]
             )
             total_price_change_by_order.update(
-                {permit.order: permit_total_price_change}
+                {permit.latest_order: permit_total_price_change}
             )
 
         # total price changes for customer's all valid permits
@@ -324,7 +324,6 @@ def resolve_change_address(_, info, address_id, iban=None):
         new_order = Order.objects.create_renewal_order(
             customer, status=new_order_status
         )
-        fixed_period_permits.update(order=new_order)
         for order, order_total_price_change in total_price_change_by_order.items():
             # create refund for each order
             if order_total_price_change < 0:

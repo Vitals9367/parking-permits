@@ -1,8 +1,7 @@
 from django.contrib.gis.db import models
-from django.db.models.expressions import RawSQL
 from django.utils.translation import gettext_lazy as _
 
-from .mixins import TimestampedModelMixin, UserStampedModelMixin, UUIDPrimaryKeyMixin
+from .mixins import TimestampedModelMixin, UserStampedModelMixin
 
 
 class RefundStatus(models.TextChoices):
@@ -11,20 +10,7 @@ class RefundStatus(models.TextChoices):
     ACCEPTED = "ACCEPTED", _("Accepted")
 
 
-class RefundManager(models.Manager):
-    def get_queryset(self):
-        return (
-            super()
-            .get_queryset()
-            .annotate(
-                refund_number=RawSQL(
-                    "refund_number", (), output_field=models.IntegerField()
-                )
-            )
-        )
-
-
-class Refund(TimestampedModelMixin, UserStampedModelMixin, UUIDPrimaryKeyMixin):
+class Refund(TimestampedModelMixin, UserStampedModelMixin):
     name = models.CharField(_("Name"), max_length=200, blank=True)
     order = models.OneToOneField(
         "Order",
@@ -43,8 +29,6 @@ class Refund(TimestampedModelMixin, UserStampedModelMixin, UUIDPrimaryKeyMixin):
         default=RefundStatus.OPEN,
     )
     description = models.TextField(_("Description"), blank=True)
-
-    objects = RefundManager()
 
     class Meta:
         verbose_name = _("Refund")

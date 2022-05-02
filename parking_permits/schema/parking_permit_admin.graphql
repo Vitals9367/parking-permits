@@ -34,7 +34,7 @@ type AddressNode {
 }
 
 type CustomerActivePermit {
-  identifier: String!
+  id: ID!
   primaryVehicle: Boolean!
 }
 
@@ -78,7 +78,7 @@ enum ParkingPermitStatus {
 }
 
 type PermitNode {
-  identifier: Int!
+  id: ID!
   customer: CustomerNode!
   vehicle: VehicleNode
   parkingZone: ZoneNode
@@ -108,7 +108,6 @@ type RefundNode {
 type OrderNode {
   id: ID!
   orderNumber: Int!
-  orderType: String!
   totalPrice: Float!
   customer: CustomerNode!
   paidTime: String
@@ -182,7 +181,7 @@ type ChangeLog {
 }
 
 type PermitDetailNode {
-  identifier: Int!
+  id: ID!
   customer: CustomerNode!
   vehicle: VehicleNode
   parkingZone: ZoneNode
@@ -333,12 +332,12 @@ enum PermitEndType {
 
 type Mutation {
   createResidentPermit(permit: ResidentPermitInput!): CreatePermitResponse
-  endPermit(permitId: Int!, endType: PermitEndType!, iban: String): MutationResponse
+  endPermit(permitId: ID!, endType: PermitEndType!, iban: String): MutationResponse
   updateResidentPermit(permitId: ID!, permitInfo: ResidentPermitInput!, iban: String): MutationResponse
   updateProduct(productId: ID!, product: ProductInput!): MutationResponse
   deleteProduct(productId: ID!): MutationResponse
   createProduct(product: ProductInput!): MutationResponse
-  updateRefund(refundNumber: Int!, refund: RefundInput!): MutationResponse
+  updateRefund(refundId: ID!, refund: RefundInput!): MutationResponse
   updateAddress(addressId: ID!, address: AddressInput!): MutationResponse
   deleteAddress(addressId: ID!): MutationResponse
   createAddress(address: AddressInput!): MutationResponse
