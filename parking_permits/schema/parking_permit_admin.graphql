@@ -210,6 +210,21 @@ type PermitPriceChange {
   monthCount: Int!
 }
 
+type LowEmissionCriterionNode {
+  id: ID!
+  powerType: String!
+  nedcMaxEmissionLimit: Int
+  wltpMaxEmissionLimit: Int
+  euroMinClassLimit: Int
+  startDate: String
+  endDate: String
+}
+
+type PagedLowEmissionCriteria {
+  objects: [LowEmissionCriterionNode]
+  pageInfo: PageInfo
+}
+
 type Query {
   permits(
     pageInput: PageInput!
@@ -241,6 +256,11 @@ type Query {
     orderBy: OrderByInput
   ): PagedAddresses!
   address(addressId: ID!): AddressNode!
+  lowEmissionCriteria(
+    pageInput: PageInput!
+    orderBy: OrderByInput
+  ): PagedLowEmissionCriteria!
+  lowEmissionCriterion(criterionId: ID!): LowEmissionCriterionNode!
 }
 
 input AddressInput {
@@ -314,6 +334,15 @@ input RefundInput {
   iban: String!
 }
 
+input LowEmissionCriterionInput {
+  powerType: String!
+  nedcMaxEmissionLimit: Int
+  wltpMaxEmissionLimit: Int
+  euroMinClassLimit: Int
+  startDate: String
+  endDate: String
+}
+
 type MutationResponse {
   success: Boolean
 }
@@ -339,4 +368,7 @@ type Mutation {
   updateAddress(addressId: ID!, address: AddressInput!): MutationResponse
   deleteAddress(addressId: ID!): MutationResponse
   createAddress(address: AddressInput!): MutationResponse
+  updateLowEmissionCriterion(criterionId: ID!, criterion: LowEmissionCriterionInput!): MutationResponse
+  deleteLowEmissionCriterion(criterionId: ID!): MutationResponse
+  createLowEmissionCriterion(criterion: LowEmissionCriterionInput!): MutationResponse
 }

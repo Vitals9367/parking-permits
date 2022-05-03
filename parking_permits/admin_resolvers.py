@@ -17,6 +17,7 @@ from django.utils.translation import gettext_lazy as _
 from parking_permits.models import (
     Address,
     Customer,
+    LowEmissionCriteria,
     Order,
     ParkingPermit,
     ParkingZone,
@@ -559,5 +560,72 @@ def resolve_create_address(obj, info, address):
         city_sv=address["city_sv"],
         location=location,
         _zone=zone,
+    )
+    return {"success": True}
+
+
+@query.field("lowEmissionCriteria")
+@is_ad_admin
+@convert_kwargs_to_snake_case
+def resolve_low_emission_criteria(
+    obj, info, page_input, order_by=None, search_items=None
+):
+    qs = LowEmissionCriteria.objects.all().order_by("power_type")
+    if order_by:
+        qs = apply_ordering(qs, order_by)
+    if search_items:
+        qs = apply_filtering(qs, search_items)
+    paginator = QuerySetPaginator(qs, page_input)
+    return {
+        "page_info": paginator.page_info,
+        "objects": paginator.object_list,
+    }
+
+
+@query.field("lowEmissionCriterion")
+@is_ad_admin
+@convert_kwargs_to_snake_case
+def resolve_low_emission_criterion(obj, info, criterion_id):
+    return LowEmissionCriteria.objects.get(id=criterion_id)
+
+
+@mutation.field("updateLowEmissionCriterion")
+@is_ad_admin
+@convert_kwargs_to_snake_case
+@transaction.atomic
+def resolve_update_low_emission_criterion(obj, info, criterion_id, criterion):
+    _criterion = LowEmissionCriteria.objects.get(id=criterion_id)
+    _criterion.power_type = criterion["power_type"]
+    _criterion.nedc_max_emission_limit = criterion["nedc_max_emission_limit"]
+    _criterion.wltp_max_emission_limit = criterion["wltp_max_emission_limit"]
+    _criterion.euro_min_class_limit = criterion["euro_min_class_limit"]
+    _criterion.start_date = criterion["start_date"]
+    _criterion.end_date = criterion["end_date"]
+    _criterion.save()
+    return {"success": True}
+
+
+@mutation.field("deleteLowEmissionCriterion")
+@is_ad_admin
+@convert_kwargs_to_snake_case
+@transaction.atomic
+def resolve_delete_low_emission_criterion(obj, info, criterion_id):
+    criterion = LowEmissionCriteria.objects.get(id=criterion_id)
+    criterion.delete()
+    return {"success": True}
+
+
+@mutation.field("createLowEmissionCriterion")
+@is_ad_admin
+@convert_kwargs_to_snake_case
+@transaction.atomic
+def resolve_create_low_emission_criterion(obj, info, criterion):
+    LowEmissionCriteria.objects.create(
+        power_type=criterion["power_type"],
+        nedc_max_emission_limit=criterion["nedc_max_emission_limit"],
+        wltp_max_emission_limit=criterion["wltp_max_emission_limit"],
+        euro_min_class_limit=criterion["euro_min_class_limit"],
+        start_date=criterion["start_date"],
+        end_date=criterion["end_date"],
     )
     return {"success": True}
