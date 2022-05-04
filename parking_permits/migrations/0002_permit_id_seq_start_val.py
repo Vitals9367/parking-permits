@@ -4,6 +4,7 @@ from django.db import migrations
 
 ALTER_PARKING_PERMIT_ID_SEQ_SQL = """
 ALTER SEQUENCE parking_permits_parkingpermit_id_seq START WITH 80000000;
+ALTER SEQUENCE parking_permits_parkingpermit_id_seq RESTART;
 """
 
 
