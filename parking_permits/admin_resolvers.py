@@ -283,8 +283,14 @@ def resolve_permit_price_change_list(obj, info, permit_id, permit_info):
         raise UpdatePermitError(_("Cannot change the customer of the permit"))
 
     vehicle_info = permit_info["vehicle"]
+    is_low_emission = is_low_emission_vehicle(
+        vehicle_info["power_type"],
+        vehicle_info["euro_class"],
+        vehicle_info["emission_type"],
+        vehicle_info["emission"],
+    )
     parking_zone = ParkingZone.objects.get(name=customer_info["zone"])
-    return permit.get_price_change_list(parking_zone, vehicle_info["is_low_emission"])
+    return permit.get_price_change_list(parking_zone, is_low_emission)
 
 
 @mutation.field("updateResidentPermit")
@@ -301,17 +307,21 @@ def resolve_update_resident_permit(obj, info, permit_id, permit_info, iban=None)
     if permit.customer.national_id_number != customer_info["national_id_number"]:
         raise UpdatePermitError(_("Cannot change the customer of the permit"))
     vehicle_info = permit_info["vehicle"]
+    is_low_emission = is_low_emission_vehicle(
+        vehicle_info["power_type"],
+        vehicle_info["euro_class"],
+        vehicle_info["emission_type"],
+        vehicle_info["emission"],
+    )
 
     parking_zone = ParkingZone.objects.get(name=customer_info["zone"])
 
-    price_change_list = permit.get_price_change_list(
-        parking_zone, vehicle_info["is_low_emission"]
-    )
+    price_change_list = permit.get_price_change_list(parking_zone, is_low_emission)
     total_price_change = sum([item["price_change"] for item in price_change_list])
 
     # only create new order when emission status or parking zone changed
     should_create_new_order = (
-        permit.vehicle.is_low_emission != vehicle_info["is_low_emission"]
+        permit.vehicle.is_low_emission != is_low_emission
         or permit.parking_zone_id != parking_zone.id
     )
 
@@ -345,6 +355,8 @@ def resolve_update_resident_permit(obj, info, permit_id, permit_info, iban=None)
         )
         logger.info(f"Creating renewal order completed: {new_order.id}")
 
+    # get updated permit info
+    permit = ParkingPermit.objects.get(id=permit_id)
     send_permit_email(PermitEmailType.UPDATED, permit)
     return {"success": True}
 
@@ -377,6 +389,8 @@ def resolve_end_permit(obj, info, permit_id, end_type, iban=None):
         comment = get_reversion_comment(EventType.CHANGED, permit)
         reversion.set_comment(comment)
 
+    # get updated permit info
+    permit = ParkingPermit.objects.get(id=permit_id)
     send_permit_email(PermitEmailType.ENDED, permit)
     return {"success": True}
 
