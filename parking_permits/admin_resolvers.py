@@ -355,6 +355,8 @@ def resolve_update_resident_permit(obj, info, permit_id, permit_info, iban=None)
         )
         logger.info(f"Creating renewal order completed: {new_order.id}")
 
+    # get updated permit info
+    permit = ParkingPermit.objects.get(id=permit_id)
     send_permit_email(PermitEmailType.UPDATED, permit)
     return {"success": True}
 
@@ -387,6 +389,8 @@ def resolve_end_permit(obj, info, permit_id, end_type, iban=None):
         comment = get_reversion_comment(EventType.CHANGED, permit)
         reversion.set_comment(comment)
 
+    # get updated permit info
+    permit = ParkingPermit.objects.get(id=permit_id)
     send_permit_email(PermitEmailType.ENDED, permit)
     return {"success": True}
 
