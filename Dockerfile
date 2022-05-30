@@ -28,6 +28,12 @@ RUN if [ "x$BUILD_MODE" = "xlocal" ] ;\
         yum repolist --disablerepo=*; \
     fi
 
+
+RUN dnf clean all \
+    rm -frv /var/cache/dnf \
+    subscription-manager refresh \
+    dnf update
+
 RUN subscription-manager repos --enable codeready-builder-for-rhel-8-x86_64-rpms
 RUN yum -y update
 
