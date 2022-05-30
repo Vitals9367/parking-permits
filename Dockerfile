@@ -24,7 +24,7 @@ RUN if [ "x$BUILD_MODE" = "xlocal" ] ;\
     then \
         subscription-manager register --username $LOCAL_REDHAT_USERNAME --password $LOCAL_REDHAT_PASSWORD --auto-attach; \
     else \
-        # subscription-manager register --username ${REDHAT_USERNAME} --password ${REDHAT_PASSWORD} --auto-attach; \
+        subscription-manager repos --disable rhel-8-for-x86_64-appstream-rpms \
         yum repolist --disablerepo=*; \
     fi
 
